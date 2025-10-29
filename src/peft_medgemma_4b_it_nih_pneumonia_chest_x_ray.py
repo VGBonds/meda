@@ -1,6 +1,3 @@
-import torch
-from torch import nn, optim
-from torch.utils.data import DataLoader
 from trl import SFTTrainer
 
 from src.config import config_medgemma_4b_it_nih_cxr
