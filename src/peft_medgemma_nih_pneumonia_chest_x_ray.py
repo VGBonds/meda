@@ -91,6 +91,11 @@ def fine_tune_medgemma_nih_pneumonia_chest_x_ray(
     )
 
 if __name__ == "__main__":
+    # Load and preprocess dataset
+    dataset = load_data_chest_xray_pneumonia()
+    # Format the dataset
+    formatted_dataset = dataset.map(format_data_medgemma_nih_chest_x_ray)
+
     # Load base model and processor
     model_id = "medgemma-4b-it"
     base_model, processor = model_utils.load_model_and_processor(
@@ -98,11 +103,7 @@ if __name__ == "__main__":
         model_directory=config_medgemma_4b_it_nih_cxr.model_folder_base,
         model_kwargs=config_medgemma_4b_it_nih_cxr.model_kwargs,
     )
-    # Load and preprocess dataset
-    dataset = load_data_chest_xray_pneumonia()
 
-    # Format the dataset
-    formatted_dataset = dataset.map(format_data_medgemma_nih_chest_x_ray)
 
     # Fine-tune the model
     fine_tune_medgemma_nih_pneumonia_chest_x_ray(

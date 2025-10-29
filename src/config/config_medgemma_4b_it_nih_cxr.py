@@ -6,7 +6,17 @@ from sympy.strategies import condition
 from trl import SFTConfig
 from peft import LoraConfig
 
-project_root = os.path.dirname(os.path.dirname(__file__))
+from huggingface_hub import login
+from dotenv import load_dotenv
+# Load environment variables from .env file
+load_dotenv()
+
+# login into huggingface hub if HF_TOKEN is set in environment variables
+hf_token = os.environ['HF_TOKEN']
+login(token=hf_token)
+
+# get the project root folder
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 # Dataset ID and cache directory for the NIH Chest X-ray Pneumonia dataset
 dataset_id = "hf-vision/chest-xray-pneumonia"
