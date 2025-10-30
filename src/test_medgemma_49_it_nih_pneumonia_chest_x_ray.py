@@ -2,6 +2,7 @@ import torch
 from src.utils import model_utils
 from src.config import config_medgemma_4b_it_nih_cxr
 from src.utils.fetch_data import load_data_chest_xray_pneumonia
+from src.utils.prompt_utils import make_prompt_with_image, make_prompt_without_image
 
 class test_medgemma_4b_it_nih_pneumonia_chest_x_ray:
     def __init__(self, model_id, model_folder, model_kwargs, max_new_tokens=250):
@@ -24,22 +25,8 @@ class test_medgemma_4b_it_nih_pneumonia_chest_x_ray:
             }
         ]
 
-    @staticmethod
-    def make_prompt(system_message, user_prompt, image):
-        messages = [
-            {
-                "role": "system",
-                "content": [{"type": "text", "text": system_message}]
-            },
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": user_prompt},  # X-ray
-                    {"type": "image", "image": image}
-                ]
-            }
-        ]
-        return messages
+        self.max_new_tokens = max_new_tokens
+
 
     def chat(self, messages):
 
@@ -55,7 +42,32 @@ class test_medgemma_4b_it_nih_pneumonia_chest_x_ray:
         with torch.inference_mode():
             generation = self.model.generate(
                 **inputs,
-                max_new_tokens=200,
+                max_new_tokens=self.max_new_tokens,
+                do_sample=False  # Greedy decoding; use do_sample=True for varied outputs
+            )
+            generation = generation[0][input_len:]
+
+        # Decode the generated text
+        decoded = self.processor.decode(generation, skip_special_tokens=True)
+        # print("Generated Description:", decoded)
+        return decoded
+
+    def chat_v1(self, messages, images):
+
+        # Process inputs (apply chat template, tokenize text, preprocess image)
+        text = self.processor.apply_chat_template(
+            messages, add_generation_prompt=True, tokenize=False,
+            return_dict=True, return_tensors="pt"
+        ).strip()#.to(self.model.device, dtype=torch.bfloat16)
+        inputs = self.processor(text=[text], images=[images], return_tensors="pt", padding=True).to(self.model.device)
+
+        input_len = inputs["input_ids"].shape[-1]
+
+        # Generate output (inference mode for efficiency)
+        with torch.inference_mode():
+            generation = self.model.generate(
+                **inputs,
+                max_new_tokens=self.max_new_tokens,
                 do_sample=False  # Greedy decoding; use do_sample=True for varied outputs
             )
             generation = generation[0][input_len:]
@@ -78,12 +90,17 @@ if __name__ == "__main__":
 
 
     dataset = load_data_chest_xray_pneumonia()
-    messages = test_instance_base.make_prompt(
+    # messages = make_prompt_with_image(
+    #     system_message=config_medgemma_4b_it_nih_cxr.prompt_template["system_message"],
+    #     user_prompt=config_medgemma_4b_it_nih_cxr.prompt_template["user_prompt"],
+    #     image=dataset["test"][-7]["image"])
+    messages = make_prompt_without_image(
         system_message=config_medgemma_4b_it_nih_cxr.prompt_template["system_message"],
-        user_prompt=config_medgemma_4b_it_nih_cxr.prompt_template["user_prompt"],
-        image=dataset["test"][-7]["image"])
+        user_prompt=config_medgemma_4b_it_nih_cxr.prompt_template["user_prompt"])
     print(f"True finding:{config_medgemma_4b_it_nih_cxr.condition_findings[dataset['test'][-7]['label']]}")
-    base_assistant_message = test_instance_base.chat(messages)
+    # base_assistant_message = test_instance_base.chat(messages)
+    base_assistant_message = test_instance_base.chat_v1(messages, dataset["test"][-7]["image"])
+
     print(f"Baseline assistant message:{base_assistant_message}")
 
     # test with the fine-tuned model
@@ -93,21 +110,30 @@ if __name__ == "__main__":
         model_kwargs=model_kwargs,
         max_new_tokens=250
     )
-    messages = test_instance_ft.make_prompt(
+    # messages = make_prompt_with_image(
+    #     system_message=config_medgemma_4b_it_nih_cxr.prompt_template["system_message"],
+    #     user_prompt=config_medgemma_4b_it_nih_cxr.prompt_template["user_prompt"],
+    #     image=dataset["test"][-7]["image"])
+    messages = make_prompt_without_image(
         system_message=config_medgemma_4b_it_nih_cxr.prompt_template["system_message"],
-        user_prompt=config_medgemma_4b_it_nih_cxr.prompt_template["user_prompt"],
-        image=dataset["test"][-7]["image"])
+        user_prompt=config_medgemma_4b_it_nih_cxr.prompt_template["user_prompt"])
     print(f"True finding:{config_medgemma_4b_it_nih_cxr.condition_findings[dataset['test'][-7]['label']]}")
-    ft_assistant_message = test_instance_ft.chat(messages)
+    # ft_assistant_message = test_instance_ft.chat(messages)
+    ft_assistant_message = test_instance_ft.chat_v1(messages, dataset["test"][-7]["image"])
     print(f"Fine-tuned assistant message:{ft_assistant_message}")
 
     augmented_user_prompt = (config_medgemma_4b_it_nih_cxr.prompt_template["user_prompt"]
                              + f"\nIn your answer, please consider that a fine-tuned model ML model on a pneumonia"
                                f"\nchest X-ray dataset does predict the label **{ft_assistant_message}**  in this case. "
                                f"\nProvide a detailed explanation for your diagnosis.")
-    augmented_messages = test_instance_ft.make_prompt(
+    # augmented_messages = make_prompt_with_image(
+    #     system_message=config_medgemma_4b_it_nih_cxr.prompt_template["system_message"],
+    #     user_prompt=augmented_user_prompt,
+    #     image=dataset["test"][-7]["image"])
+    augmented_messages = make_prompt_without_image(
         system_message=config_medgemma_4b_it_nih_cxr.prompt_template["system_message"],
-        user_prompt=augmented_user_prompt,
-        image=dataset["test"][-7]["image"])
-    augmented_assistant_message = test_instance_base.chat(augmented_messages)
+        user_prompt=augmented_user_prompt)
+    # augmented_assistant_message = test_instance_base.chat(augmented_messages)
+    augmented_assistant_message = test_instance_base.chat_v1(augmented_messages, dataset["test"][-7]["image"])
 
+    print(f"Augmented-tuned assistant message:{ft_assistant_message}")
