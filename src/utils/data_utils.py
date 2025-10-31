@@ -30,7 +30,7 @@ def format_data_medgemma_nih_chest_x_ray(example: dict[str, any]) -> dict[str, a
             "content": [
                 {
                     "type": "text",
-                    "text": config_medgemma_4b_it_nih_cxr.pneumonia_findings[example["label"]],
+                    "text": config_medgemma_4b_it_nih_cxr.condition_findings[example["label"]],
                 },
             ],
         },

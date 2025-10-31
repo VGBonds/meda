@@ -4,16 +4,29 @@ from peft import PeftModel
 
 
 def load_model_and_processor(model_id, model_directory, model_kwargs):
+    # For PEFT adapters we expect a local directory; fail fast if loading fails
     if model_id == 'peft':
-        return load_model_and_processor_from_disk(model_directory, model_kwargs)
+        try:
+            return load_model_and_processor_from_disk(model_directory, model_kwargs)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load PEFT model from disk: {e}")
+
+    # For known hub models, try loading from disk first and fall back to downloading
     elif model_id == "google/medgemma-4b-it":
-        if (model_directory is None) or (not os.path.exists(model_directory)):
-            print(f"Model directory {model_directory} does not exist. Loading from Hugging Face Hub.")
-            model_id = "google/" + model_id
-            download_model_and_processor(model_id, model_directory, model_kwargs)
-        return load_model_and_processor_from_disk(model_directory, model_kwargs)
+        # Use provided directory or a default directory derived from model_id
+        save_directory = model_directory or f"./{model_id.replace('/', '_')}-model"
+
+        try:
+            return load_model_and_processor_from_disk(save_directory, model_kwargs)
+        except Exception as e:
+            print(f"Could not load model from {save_directory}: {e}. Downloading from Hugging Face Hub...")
+            # Ensure the download directory exists and download
+            download_model_and_processor(model_id, save_directory, model_kwargs)
+            # Retry loading from disk after download
+            return load_model_and_processor_from_disk(save_directory, model_kwargs)
+
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"Model id {model_id} not supported")
 
 
 def download_model_and_processor(model_id, save_directory, model_kwargs):
@@ -119,3 +132,17 @@ def save_ft_model_and_processor(
     # Save merged model
     ft_model.save_pretrained(save_directory)
     ft_processor.save_pretrained(save_directory)
+
+
+if __name__ == "__main__":
+    # Example usage
+    model_id = "google/medgemma-4b-it"
+    model_directory = "./medgemma-4b-it-model"
+    model_kwargs = dict(
+        attn_implementation="eager",
+        torch_dtype="auto",
+        device_map="auto",
+    )
+
+    # Download and load model and processor
+    model, processor = load_model_and_processor(model_id, model_directory, model_kwargs)

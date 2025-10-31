@@ -158,7 +158,7 @@ if __name__ == "__main__":
 
     dataset = load_data_chest_xray_pneumonia()
     dataset_test = dataset["test"]
-    dataset_test = dataset_test.select(list(range(10)) + list(range(len(dataset_test)-10, len(dataset_test), 1)))
+    #dataset_test = dataset_test.select(list(range(10)) + list(range(len(dataset_test)-10, len(dataset_test), 1)))
     accuracy_baseline, f1_baseline = evaluator.evaluate(dataset_test, batch_size=4)
 
     print(f"Base Model Evaluation - Accuracy: {accuracy_baseline}, F1 Score: {f1_baseline}")
