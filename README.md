@@ -14,6 +14,9 @@ HUGGINGFACEHUB_API_TOKEN=your_hugging```
 Then visit the corresponding [link](https://huggingface.co/google/medgemma-4b-it) to accept the terms of service for the model.
 (https://huggingface.co/google/medgemma-4b-it)
 
+### Demo
+View/run the demo notebook: [peft_medgemma_4b_it_nih_cxr_pneumonia.ipynb](peft_medgemma_4b_it_nih_cxr_pneumonia.ipynb)
+
 ### Run the fine tuning script:
 ```bash
 python src/peft_medgemma_4b_it_nih_pneumonia_chest_x_ray.py
