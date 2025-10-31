@@ -176,4 +176,4 @@ if __name__ == "__main__":
 
     accuracy_ft, f1_ft = evaluator.evaluate(dataset_test, batch_size=4)
 
-    print(f"Base Model Evaluation - Accuracy: {accuracy_ft}, F1 Score: {f1_ft}")
+    print(f"Fine tuned Model Evaluation - Accuracy: {accuracy_ft}, F1 Score: {f1_ft}")

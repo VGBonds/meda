@@ -4,6 +4,7 @@ from src.config import config_medgemma_4b_it_nih_cxr
 from src.utils import model_utils
 from src.utils.fetch_data import load_data_chest_xray_pneumonia
 from src.utils.data_utils import format_data_medgemma_nih_chest_x_ray
+from typing import Any
 
 
 def fine_tune_medgemma_nih_pneumonia_chest_x_ray(
@@ -32,7 +33,7 @@ def fine_tune_medgemma_nih_pneumonia_chest_x_ray(
 
     # function to transform the training examples into the format accepted by MedGemma
 
-    def collate_fn(examples: list[dict[str, any]]):
+    def collate_fn(examples: list[dict[str, Any]]):
         texts = []
         images = []
         for example in examples:
