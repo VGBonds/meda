@@ -1,4 +1,3 @@
-# python
 import gc
 
 import torch
