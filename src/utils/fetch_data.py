@@ -110,13 +110,14 @@ def split_dataset(
     return DatasetDict({
         'train': train_testvalid['train'],
         'test': test_valid['test'],
-        'valid': test_valid['train'],
+        'validation': test_valid['train'],
     })
 
 if __name__ == "__main__":
     # # NIH Chest X-Ray Pneumonia Dataset
     # cache_directory = config_medgemma_4b_it_nih_cxr.dataset_cache_directory
-    # _ = load_data_chest_xray_pneumonia(cache_directory)
+    # dataset = load_data_chest_xray_pneumonia(cache_directory)
+    # print(dataset)
 
     # NCT_CRC_HE dataset:
     zip_url_train = config_medgemma_4b_it_nct_crc_he.dataset_url_train

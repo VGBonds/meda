@@ -20,7 +20,7 @@ def format_data_medgemma_nct_crc_he(example: dict[str, Any]) -> dict[str, Any]:
                 },
                 {
                     "type": "text",
-                    "text": config_medgemma_4b_it_nct_crc_he.prompt_template["user_message"],
+                    "text": config_medgemma_4b_it_nct_crc_he.prompt_template["user_prompt"],
                 },
             ],
         },

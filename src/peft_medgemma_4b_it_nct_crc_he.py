@@ -90,12 +90,11 @@ def fine_tune_medgemma_nct_crc_he(
 
 if __name__ == "__main__":
     # Load and preprocess dataset
-    dataset = load_data_nct_crc_he(test_size=0.02, val_size=0.02, max_examples=25000)
+    dataset = load_data_nct_crc_he(test_size=0.025, val_size=0.025, max_examples=25000)
     # Format the dataset
     formatted_dataset = dataset.map(format_data_medgemma_nct_crc_he)
 
     # Load base model and processor
-    model_id = "medgemma-4b-it"
     base_model, processor = model_utils.load_model_and_processor(
         model_id=config_medgemma_4b_it_nct_crc_he.base_model_id,
         model_directory=config_medgemma_4b_it_nct_crc_he.model_folder_base,
@@ -109,8 +108,8 @@ if __name__ == "__main__":
         processor=processor,
         data=formatted_dataset,
         base_model_directory=config_medgemma_4b_it_nct_crc_he.model_folder_base,
-        save_directory_adapters=config_medgemma_4b_it_nct_crc_he.model_folder_pneumonia_ft_adapter,
-        save_directory_full_model=config_medgemma_4b_it_nct_crc_he.model_folder_pneumonia_ft_full,
+        save_directory_adapters=config_medgemma_4b_it_nct_crc_he.model_folder_crc_ft_adapter,
+        save_directory_full_model=config_medgemma_4b_it_nct_crc_he.model_folder_crc_ft_full,
         model_kwargs=config_medgemma_4b_it_nct_crc_he.model_kwargs,
     )
 

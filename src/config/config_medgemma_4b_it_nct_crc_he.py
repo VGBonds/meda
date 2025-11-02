@@ -28,8 +28,8 @@ dataset_cache_directory_test = os.path.join(dataset_cache_directory, "NCT-CRC-HE
 # Model ID,  cache directory for storing pre-trained models and fine-tuned versions
 base_model_id = "google/medgemma-4b-it"
 model_folder_base = os.path.join(project_root, "models", "medgemma-4b-it")
-model_folder_pneumonia_ft_adapter = os.path.join(project_root, "models", "medgemma-4b-it-nct-crc-he-adapter")
-model_folder_pneumonia_ft_full = os.path.join(project_root, "models", "medgemma-4b-it-nct-crc-he-finetuned-merged")
+model_folder_crc_ft_adapter = os.path.join(project_root, "models", "medgemma-4b-it-nct-crc-he-adapter")
+model_folder_crc_ft_full = os.path.join(project_root, "models", "medgemma-4b-it-nct-crc-he-finetuned-merged")
 # Model loading keyword arguments
 model_kwargs = dict(
     attn_implementation="eager",
@@ -39,13 +39,13 @@ model_kwargs = dict(
 # !!! ONLY FOR 4-BIT QUANTIZED MODELS !!!  Only use for high end GPUs
 # which support bfloat16 compute in 4-bit quantization (e.g., NVIDIA H100, A100)
 
-model_kwargs["quantization_config"] = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=model_kwargs["torch_dtype"],
-    bnb_4bit_quant_storage=model_kwargs["torch_dtype"],
-)
+# model_kwargs["quantization_config"] = BitsAndBytesConfig(
+#     load_in_4bit=True,
+#     bnb_4bit_use_double_quant=True,
+#     bnb_4bit_quant_type="nf4",
+#     bnb_4bit_compute_dtype=model_kwargs["torch_dtype"],
+#     bnb_4bit_quant_storage=model_kwargs["torch_dtype"],
+# )
 
 # prompt templates
 condition_findings = [
