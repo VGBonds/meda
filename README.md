@@ -5,6 +5,13 @@
 ```bash
 pip install -r requirements.txt
 ```
+
+### Install the meda package:
+```bash
+pip install -e .
+``` 
+from the root directory.
+
 ### Provide HF token:
 add your Hugging Face API token in the .env file:
 

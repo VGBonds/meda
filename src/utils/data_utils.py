@@ -1,5 +1,6 @@
 from typing import Any
-from src.config import config_medgemma_4b_it_nih_cxr, config_medgemma_4b_it_nct_crc_he
+import config.config_medgemma_4b_it_nih_cxr as config_medgemma_4b_it_nih_cxr
+import config.config_medgemma_4b_it_nct_crc_he as config_medgemma_4b_it_nct_crc_he
 from datasets import load_dataset
 
 

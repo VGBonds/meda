@@ -1,9 +1,9 @@
 from trl import SFTTrainer
 
-from src.config import config_medgemma_4b_it_nih_cxr
-from src.utils import model_utils
-from src.utils.fetch_data import load_data_chest_xray_pneumonia
-from src.utils.data_utils import format_data_medgemma_nih_chest_x_ray
+import config.config_medgemma_4b_it_nih_cxr as config_medgemma_4b_it_nih_cxr
+import utils.model_utils  as model_utils
+from utils.fetch_data import load_data_chest_xray_pneumonia
+from utils.data_utils import format_data_medgemma_nih_chest_x_ray
 from typing import Any
 
 

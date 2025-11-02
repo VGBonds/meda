@@ -1,10 +1,10 @@
 import gc
 
 import torch
-from src.utils import model_utils
-from src.config import config_medgemma_4b_it_nih_cxr
-from src.utils.fetch_data import load_data_chest_xray_pneumonia
-from src.utils.prompt_utils import make_prompt_without_image
+import utils.model_utils as model_utils
+import config.config_medgemma_4b_it_nih_cxr as config_medgemma_4b_it_nih_cxr
+from utils.fetch_data import load_data_chest_xray_pneumonia
+from utils.prompt_utils import make_prompt_without_image
 from sklearn.metrics import f1_score, accuracy_score
 from PIL import Image
 

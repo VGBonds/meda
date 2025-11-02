@@ -1,8 +1,8 @@
 import torch
-from src.utils import model_utils
-from src.config import config_medgemma_4b_it_nct_crc_he
-from src.utils.fetch_data import load_data_chest_xray_pneumonia
-from src.utils.prompt_utils import make_prompt_with_image, make_prompt_without_image
+import utils.model_utils as model_utils
+import config.config_medgemma_4b_it_nct_crc_he as config_medgemma_4b_it_nct_crc_he
+from utils.fetch_data import load_data_chest_xray_pneumonia
+from utils.prompt_utils import make_prompt_with_image, make_prompt_without_image
 
 class test_medgemma_4b_it_nct_crc_he:
     def __init__(self, model_id, model_folder, model_kwargs, max_new_tokens=250):

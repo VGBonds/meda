@@ -1,9 +1,9 @@
 from trl import SFTTrainer
 
-from src.config import config_medgemma_4b_it_nct_crc_he
+import config.config_medgemma_4b_it_nct_crc_he as config_medgemma_4b_it_nct_crc_he
 from src.utils import model_utils
-from src.utils.fetch_data import load_data_nct_crc_he
-from src.utils.data_utils import format_data_medgemma_nct_crc_he
+from utils.fetch_data import load_data_nct_crc_he
+from utils.data_utils import format_data_medgemma_nct_crc_he
 from typing import Any
 
 
