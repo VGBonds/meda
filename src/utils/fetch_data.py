@@ -5,7 +5,32 @@ import zipfile
 from datasets import load_dataset, DatasetDict
 import config.config_medgemma_4b_it_nih_cxr as config_medgemma_4b_it_nih_cxr
 import config.config_medgemma_4b_it_nct_crc_he as config_medgemma_4b_it_nct_crc_he
+import config.config_medgemma_4b_it_brain_mri as config_medgemma_4b_it_brain_mri
+
 import urllib.request
+import kagglehub
+import shutil
+
+def download_dataset_from_kaggle(dataset_name: str, dataset_cache_path: str) -> None:
+    path = kagglehub.dataset_download(dataset_name)
+    # move the downloaded file to dataset_cache_path
+    os.makedirs(os.path.dirname(dataset_cache_path), exist_ok=True)
+    shutil.move(path, dataset_cache_path)
+
+def load_data_brain_mri(test_size, val_size, max_examples):
+    cache_dir = config_medgemma_4b_it_brain_mri.dataset_cache_directory
+    if (not os.path.isdir(cache_dir)) or (not os.listdir(cache_dir)):
+        print("Cache directory is missing or empty. Downloading dataset.")
+        download_dataset_from_kaggle(dataset_name=config_medgemma_4b_it_brain_mri.dataset_id,
+                                     dataset_cache_path=cache_dir)
+
+    dataset = load_dataset(path=cache_dir)
+    print("Dataset structure")
+    print(dataset)
+    dataset = split_dataset(dataset, test_size=test_size, val_size=val_size, seed=841, max_examples=max_examples)
+    print("Dataset structure after splitting")
+    print(dataset)
+    return dataset
 
 
 def download_zip_from_url(dataset_url: str, dataset_cache_path: str) -> None:
@@ -114,22 +139,27 @@ def split_dataset(
     })
 
 if __name__ == "__main__":
+
+    dataset = load_data_brain_mri(test_size=0.05, val_size=0.05, max_examples=None)
+    print(dataset)
+    BRAIN_CANCER_CLASSES = dataset["train"].features["label"].names
+    print("Detected classes:", BRAIN_CANCER_CLASSES)
     # # NIH Chest X-Ray Pneumonia Dataset
     # cache_directory = config_medgemma_4b_it_nih_cxr.dataset_cache_directory
     # dataset = load_data_chest_xray_pneumonia(cache_directory)
     # print(dataset)
 
-    # NCT_CRC_HE dataset:
-    zip_url_train = config_medgemma_4b_it_nct_crc_he.dataset_url_train
-    zip_url_test = config_medgemma_4b_it_nct_crc_he.dataset_url_test
-
-    output_directory = config_medgemma_4b_it_nct_crc_he.dataset_cache_directory
-    os.makedirs(output_directory, exist_ok=True)  # Create the directory if it doesn't exist
-    save_path_train = os.path.join(output_directory, zip_url_train.split("/")[-1])
-    save_path_test = os.path.join(output_directory, zip_url_test.split("/")[-1])
-
-    dataset = load_data_nct_crc_he(test_size=0.02, val_size=0.02, max_examples=25000)
-    print(dataset)
-    # # download test data
-    # download_zip_from_url(url=zip_url_train, save_path=save_path_train)
+    # # NCT_CRC_HE dataset:
+    # zip_url_train = config_medgemma_4b_it_nct_crc_he.dataset_url_train
+    # zip_url_test = config_medgemma_4b_it_nct_crc_he.dataset_url_test
+    #
+    # output_directory = config_medgemma_4b_it_nct_crc_he.dataset_cache_directory
+    # os.makedirs(output_directory, exist_ok=True)  # Create the directory if it doesn't exist
+    # save_path_train = os.path.join(output_directory, zip_url_train.split("/")[-1])
+    # save_path_test = os.path.join(output_directory, zip_url_test.split("/")[-1])
+    #
+    # dataset = load_data_nct_crc_he(test_size=0.02, val_size=0.02, max_examples=25000)
+    # print(dataset)
+    # # # download test data
+    # # download_zip_from_url(url=zip_url_train, save_path=save_path_train)
 

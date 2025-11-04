@@ -1,10 +1,10 @@
 import torch
 import utils.model_utils as model_utils
-import config.config_medgemma_4b_it_nct_crc_he as config_medgemma_4b_it_nct_crc_he
-from utils.fetch_data import load_data_chest_xray_pneumonia
+import config.config_medgemma_4b_it_brain_mri as config_medgemma_4b_it_brain_mri
+from utils.fetch_data import load_data_brain_mri
 from utils.prompt_utils import make_prompt_with_image, make_prompt_without_image
 
-class test_medgemma_4b_it_nct_crc_he:
+class test_medgemma_4b_it_brain_mri:
     def __init__(self, model_id, model_folder, model_kwargs, max_new_tokens=250):
 
         self.model, self.processor = model_utils.load_model_and_processor(model_id,
@@ -14,12 +14,12 @@ class test_medgemma_4b_it_nct_crc_he:
         self.messages_template = [
             {
                 "role": "system",
-                "content": [{"type": "text", "text": config_medgemma_4b_it_nct_crc_he.prompt_template["system_message"]}]
+                "content": [{"type": "text", "text": config_medgemma_4b_it_brain_mri.prompt_template["system_message"]}]
             },
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": config_medgemma_4b_it_nct_crc_he.prompt_template["user_prompt"]},  # X-ray
+                    {"type": "text", "text": config_medgemma_4b_it_brain_mri.prompt_template["user_prompt"]},  # X-ray
                     {"type": "image", "image": None}
                 ]
             }
@@ -80,33 +80,33 @@ class test_medgemma_4b_it_nct_crc_he:
 
 if __name__ == "__main__":
 
-    model_kwargs=config_medgemma_4b_it_nct_crc_he.model_kwargs
-    test_instance_base = test_medgemma_4b_it_nct_crc_he(
-        model_id=config_medgemma_4b_it_nct_crc_he.base_model_id,
-        model_folder=config_medgemma_4b_it_nct_crc_he.model_folder_base,
+    model_kwargs=config_medgemma_4b_it_brain_mri.model_kwargs
+    test_instance_base = test_medgemma_4b_it_brain_mri(
+        model_id=config_medgemma_4b_it_brain_mri.base_model_id,
+        model_folder=config_medgemma_4b_it_brain_mri.model_folder_base,
         model_kwargs=model_kwargs,
         max_new_tokens=250
     )
 
 
-    dataset = load_data_chest_xray_pneumonia()
+    dataset = load_data_brain_mri(test_size=0.05, val_size=0.05, max_examples=None)
     # messages = make_prompt_with_image(
     #     system_message=config_medgemma_4b_it_nih_cxr.prompt_template["system_message"],
     #     user_prompt=config_medgemma_4b_it_nih_cxr.prompt_template["user_prompt"],
     #     image=dataset["test"][-7]["image"])
     messages = make_prompt_without_image(
-        system_message=config_medgemma_4b_it_nct_crc_he.prompt_template["system_message"],
-        user_prompt=config_medgemma_4b_it_nct_crc_he.prompt_template["user_prompt"])
-    print(f"True finding:{config_medgemma_4b_it_nct_crc_he.condition_findings[dataset['test'][-7]['label']]}")
+        system_message=config_medgemma_4b_it_brain_mri.prompt_template["system_message"],
+        user_prompt=config_medgemma_4b_it_brain_mri.prompt_template["user_prompt"])
+    print(f"True finding:{config_medgemma_4b_it_brain_mri.condition_findings[dataset['test'][-7]['label']]}")
     # base_assistant_message = test_instance_base.chat(messages)
     base_assistant_message = test_instance_base.chat_v1(messages, dataset["test"][-7]["image"])
 
     print(f"Baseline assistant message:{base_assistant_message}")
 
     # test with the fine-tuned model
-    test_instance_ft = test_medgemma_4b_it_nct_crc_he(
+    test_instance_ft = test_medgemma_4b_it_brain_mri(
         model_id="peft",
-        model_folder=config_medgemma_4b_it_nct_crc_he.model_folder_crc_ft_full,
+        model_folder=config_medgemma_4b_it_brain_mri.model_folder_bmri_ft_full,
         model_kwargs=model_kwargs,
         max_new_tokens=250
     )
@@ -115,25 +115,23 @@ if __name__ == "__main__":
     #     user_prompt=config_medgemma_4b_it_nih_cxr.prompt_template["user_prompt"],
     #     image=dataset["test"][-7]["image"])
     messages = make_prompt_without_image(
-        system_message=config_medgemma_4b_it_nct_crc_he.prompt_template["system_message"],
-        user_prompt=config_medgemma_4b_it_nct_crc_he.prompt_template["user_prompt"])
-    print(f"True finding:{config_medgemma_4b_it_nct_crc_he.condition_findings[dataset['test'][-7]['label']]}")
+        system_message=config_medgemma_4b_it_brain_mri.prompt_template["system_message"],
+        user_prompt=config_medgemma_4b_it_brain_mri.prompt_template["user_prompt"])
+    print(f"True finding:{config_medgemma_4b_it_brain_mri.condition_findings[dataset['test'][-7]['label']]}")
     # ft_assistant_message = test_instance_ft.chat(messages)
     ft_assistant_message = test_instance_ft.chat_v1(messages, dataset["test"][-7]["image"])
     print(f"Fine-tuned assistant message:{ft_assistant_message}")
 
-    augmented_user_prompt = (config_medgemma_4b_it_nct_crc_he.prompt_template["user_prompt"]
-                             + f"\nIn your answer, please consider that a fine-tuned model ML model on "
-                               f"\nhematoxylin & eosin stained histological images of human colorectal "
-                               f"\ncancer (CRC) and normal tissue has predicted  **{ft_assistant_message}**  in this case. "
+    augmented_user_prompt = (config_medgemma_4b_it_brain_mri.prompt_template["user_prompt"]
+                             + f"\nIn your answer, please consider that a fine-tuned model ML model on brain MRI data"
+                               f"\n does predict the label **{ft_assistant_message}**  in this case. "
                                f"\nProvide a detailed explanation for your diagnosis.")
-
     # augmented_messages = make_prompt_with_image(
     #     system_message=config_medgemma_4b_it_nih_cxr.prompt_template["system_message"],
     #     user_prompt=augmented_user_prompt,
     #     image=dataset["test"][-7]["image"])
     augmented_messages = make_prompt_without_image(
-        system_message=config_medgemma_4b_it_nct_crc_he.prompt_template["system_message"],
+        system_message=config_medgemma_4b_it_brain_mri.prompt_template["system_message"],
         user_prompt=augmented_user_prompt)
     # augmented_assistant_message = test_instance_base.chat(augmented_messages)
     augmented_assistant_message = test_instance_base.chat_v1(augmented_messages, dataset["test"][-7]["image"])

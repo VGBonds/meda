@@ -1,7 +1,43 @@
 from typing import Any
 import config.config_medgemma_4b_it_nih_cxr as config_medgemma_4b_it_nih_cxr
 import config.config_medgemma_4b_it_nct_crc_he as config_medgemma_4b_it_nct_crc_he
+import config.config_medgemma_4b_it_brain_mri as config_medgemma_4b_it_brain_mri
+
 from datasets import load_dataset
+
+
+def format_data_medgemma_brain_mri(example: dict[str, Any]) -> dict[str, Any]:
+    example["messages"] = [
+        {"role": "system",
+         "content": [
+             {"type": "text",
+              "text": config_medgemma_4b_it_brain_mri.prompt_template["system_message"]
+              }
+         ]
+         },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                },
+                {
+                    "type": "text",
+                    "text": config_medgemma_4b_it_brain_mri.prompt_template["user_prompt"],
+                },
+            ],
+        },
+        {
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": config_medgemma_4b_it_brain_mri.condition_findings[example["label"]],
+                },
+            ],
+        },
+    ]
+    return example
 
 
 def format_data_medgemma_nct_crc_he(example: dict[str, Any]) -> dict[str, Any]:

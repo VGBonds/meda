@@ -18,18 +18,15 @@ login(token=hf_token)
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 # Dataset ID and cache directory for the NIH Chest X-ray Pneumonia dataset
-dataset_id = "nct_crc_he"
-dataset_url_train = "https://zenodo.org/records/1214456/files/NCT-CRC-HE-100K.zip"
-dataset_url_test = "https://zenodo.org/records/1214456/files/CRC-VAL-HE-7K.zip"
-dataset_cache_directory = os.path.join(project_root, "data", "nct_crc_he")
-dataset_cache_directory_train = os.path.join(dataset_cache_directory, "NCT-CRC-HE-100K")
-dataset_cache_directory_test = os.path.join(dataset_cache_directory, "NCT-CRC-HE-7K")
+dataset_id = "orvile/brain-cancer-mri-dataset"
+dataset_cache_directory = os.path.join(project_root, "data", "bc_mri")
+
 
 # Model ID,  cache directory for storing pre-trained models and fine-tuned versions
 base_model_id = "google/medgemma-4b-it"
 model_folder_base = os.path.join(project_root, "models", "medgemma-4b-it")
-model_folder_crc_ft_adapter = os.path.join(project_root, "models", "medgemma-4b-it-nct-crc-he-adapter")
-model_folder_crc_ft_full = os.path.join(project_root, "models", "medgemma-4b-it-nct-crc-he-finetuned-merged")
+model_folder_bmri_ft_adapter = os.path.join(project_root, "models", "medgemma-4b-it-brain-mri-adapter")
+model_folder_bmri_ft_full = os.path.join(project_root, "models", "medgemma-4b-it-nct-brain-mri-merged")
 # Model loading keyword arguments
 model_kwargs = dict(
     attn_implementation="eager",
@@ -49,23 +46,15 @@ model_kwargs = dict(
 
 # prompt templates
 condition_findings = [
-    "A: adipose",
-    "B: background",
-    "C: debris",
-    "D: lymphocytes",
-    "E: mucus",
-    "F: smooth muscle",
-    "G: normal colon mucosa",
-    "H: cancer-associated stroma",
-    "I: colorectal adenocarcinoma epithelium"
+    "A: brain glioma",
+    "B: brain menin",
+    "C: brain tumor",
 ]
 condition_findings_str = "\n".join(condition_findings)
 prompt_template = {
-    "system_message": "You are a medical AI expert analyzing image patches from hematoxylin & eosin \
-    stained histological images of human colorectal cancer (CRC) and normal tissue.",
-    "user_prompt": f"What is the most likely tissue type shown in the histopathology image? \n {condition_findings_str}"
+    "system_message": "You are a medical AI expert analyzing brain MRI images.",
+    "user_prompt": f"What is the most likely type of brain cancer shown in the MRI image? \n {condition_findings_str}"
 }
-
 
 # set the fine-tuning configuration
 sft_args = SFTConfig(
