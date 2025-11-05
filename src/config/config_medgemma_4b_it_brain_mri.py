@@ -58,7 +58,7 @@ prompt_template = {
 
 # set the fine-tuning configuration
 sft_args = SFTConfig(
-    output_dir="medgemma-4b-it-nct-crc-he",                     # Directory and Hub repository id to save the model to
+    output_dir="medgemma-4b-it-brain-mri",                      # Directory and Hub repository id to save the model to
     num_train_epochs=1,                                         # Number of training epochs
     per_device_train_batch_size=4,                              # Batch size per device during training
     per_device_eval_batch_size=4,                               # Batch size per device during evaluation
