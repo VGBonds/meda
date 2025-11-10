@@ -140,6 +140,39 @@ def split_dataset(
 
 if __name__ == "__main__":
 
+    camelyon16_dataset_id_hf="torchmil/Camelyon16_MIL"
+
+    camelyon16_dataset_hf_cache_dir = os.path.join(config_medgemma_4b_it_brain_mri.project_root, "data", "camelyon16_hf")
+    if (not os.path.isdir(camelyon16_dataset_hf_cache_dir)) or (not os.listdir(camelyon16_dataset_hf_cache_dir)):
+        print("Cache directory is missing or empty. Downloading dataset.")
+        os.makedirs(camelyon16_dataset_hf_cache_dir, exist_ok=True)
+
+
+    print("Downloading chest xray pneumonia dataset...")
+    dataset = load_dataset(camelyon16_dataset_id_hf, cache_dir=camelyon16_dataset_hf_cache_dir)
+    print("Finished downloading chest xray pneumonia dataset.")
+    print(dataset)
+
+
+
+
+    # camelyon16 dataset
+    camelyon16_dataset_id_kaggle = "forcewithme/dsmil-camelyon16-feature"
+
+    camelyon16_cache_directory = os.path.join(config_medgemma_4b_it_brain_mri.project_root, "data", "camelyon16")
+    if (not os.path.isdir(camelyon16_cache_directory)) or (not os.listdir(camelyon16_cache_directory)):
+        print("Cache directory is missing or empty. Downloading Camelyon16 dataset.")
+        download_dataset_from_kaggle(dataset_name=camelyon16_dataset_id_kaggle,
+                                     dataset_cache_path=camelyon16_cache_directory)
+    camelyon16_dataset = load_dataset(path=camelyon16_cache_directory)
+    print("Camelyon16 dataset structure")
+    print(camelyon16_dataset)
+
+
+
+
+
+    # Brain MRI dataset
     dataset = load_data_brain_mri(test_size=0.05, val_size=0.05, max_examples=None)
     print(dataset)
     BRAIN_CANCER_CLASSES = dataset["train"].features["label"].names
