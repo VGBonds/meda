@@ -19,6 +19,8 @@ hibou = AutoModel.from_pretrained(
     "histai/hibou-L",
     trust_remote_code=True
 )
+hibou.to(DEVICE)
+hibou.eval()
 processor = AutoImageProcessor.from_pretrained(
         "histai/hibou-L",
         trust_remote_code=True,
