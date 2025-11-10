@@ -15,7 +15,6 @@ from transformers import AutoImageProcessor, AutoModel
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # === hibou-L embedder ===
 hibou = AutoModel.from_pretrained(
