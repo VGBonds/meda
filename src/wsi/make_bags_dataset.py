@@ -1,119 +1,161 @@
+# --------------------------------------------------------------
+# MERGE POSITIVE & NEGATIVE BAGS + SLIDE-LEVEL SPLIT
+# --------------------------------------------------------------
+import torch
+from torch.utils.data import Dataset, DataLoader, Subset
+import random
+from pathlib import Path
+import numpy as np
+from tqdm.auto import tqdm
+
 import wsi.config_wsi as config
 
-
-
-def make_bags(positive_bags_path=config.positive_mil_cache, negative_bags_path=config.negative_mil_cache):
-    pass
-
-
-
-
-
-
-# Merge
-mil_data_balanced = mil_data + negative_bags
-print(f"Balanced dataset: {len(mil_data_balanced)} bags (50 pos + {len(negative_bags)} neg)")
-
-
-# Update SlideMILDataset to include slide_label/soft_label
-class SlideMILDataset(torch.utils.data.Dataset):
-    def __len__(self): return len(mil_data_balanced)
-
+class MILBagDataset(Dataset):
+    def __init__(self, mil_data, indices):
+        self.mil_data = mil_data
+        self.indices = indices
+    def __len__(self):
+        return len(self.indices)
     def __getitem__(self, idx):
-        item = mil_data_balanced[idx]
+        real_idx = self.indices[idx]
+        bag = self.mil_data[real_idx]
         return {
-            "features": item["features"],
-            "label": item["slide_label"],  # Use slide-level for MIL target
-            "slide_id": item["slide_id"],
-            "coords": item["coords"]
+            "features": bag["features"],            # (global_max_N, D)
+            "mask": bag["mask"],                    # (global_max_N,)
+            "label": bag["label"],                  # scalar
+            "slide_id": bag["slide_id"],
+            "coordinates": bag["coordinates"]       # (global_max_N, 2)
         }
 
 
-full_ds = SlideMILDataset()
-
-# Slide-level split (80/10/10, no leakage)
-random.seed(42)
-slide_ids = [item["slide_id"] for item in mil_data_balanced]
-random.shuffle(slide_ids)
-
-n = len(slide_ids)
-train_end = int(0.8 * n)
-val_end = int(0.9 * n)
-
-train_ids = set(slide_ids[:train_end])
-val_ids = set(slide_ids[train_end:val_end])
-test_ids = set(slide_ids[val_end:])
-
-train_idx = [i for i, item in enumerate(mil_data_balanced) if item["slide_id"] in train_ids]
-val_idx = [i for i, item in enumerate(mil_data_balanced) if item["slide_id"] in val_ids]
-test_idx = [i for i, item in enumerate(mil_data_balanced) if item["slide_id"] in test_ids]
-
-train_ds = Subset(full_ds, train_idx)
-val_ds = Subset(full_ds, val_idx)
-test_ds = Subset(full_ds, test_idx)
-
-train_loader = DataLoader(train_ds, batch_size=1, shuffle=True, num_workers=2, pin_memory=True)
-val_loader = DataLoader(val_ds, batch_size=1, shuffle=False, num_workers=2, pin_memory=True)
-test_loader = DataLoader(test_ds, batch_size=1, shuffle=False, num_workers=2, pin_memory=True)
-
-print(f"Split: train={len(train_ds)} slides | val={len(val_ds)} | test={len(test_ds)}")
-print("Ready for ABMIL training (Cells 6-9 unchanged)!")
+# Collate function for DataLoader in order to transform list of dicts into dict of batched tensors
+def mil_collate_fn(batch):
+    features = torch.stack([item["features"] for item in batch])  # (B, MAX_N, D)
+    masks = torch.stack([item["mask"] for item in batch])        # (B, MAX_N)
+    labels = torch.stack([item["label"] for item in batch])      # (B,)
+    slide_ids = [item["slide_id"] for item in batch]
+    coordinates = [item["coordinates"] for item in batch]
+    return {
+        "features": features,
+        "mask": masks,
+        "labels": labels,
+        "slide_ids": slide_ids,
+        "coordinates": coordinates
+    }
 
 
+def make_bags_dataset(positive_bags_path=config.positive_mil_cache, negative_bags_path=config.negative_mil_cache):
+    # === 1. LOAD BAGS ===
+    print("Loading positive and negative bags...")
+    pos_bags = torch.load(positive_bags_path, map_location="cpu")
+    neg_bags = torch.load(negative_bags_path, map_location="cpu")
+
+    print(f"Positives: {len(pos_bags)} bags, {sum(b['features'].shape[0] for b in pos_bags):,} patches")
+    print(f"Negatives: {len(neg_bags)} bags, {sum(b['features'].shape[0] for b in neg_bags):,} patches")
+
+    # === 2. MERGE ===
+    mil_data = pos_bags + neg_bags
+    # Remove a superfluous tensor dimension. todo: fix this in bag creation
+    for bag in mil_data:
+        bag["features"] = torch.squeeze(bag["features"], dim=1)
+    print(f"Merged: {len(mil_data)} total bags")
+
+    # === 2.5 PRE-PAD ===
+    mil_data = pad_mil_data(mil_data)
+
+    # === 3. SLIDE-LEVEL SPLIT (NO LEAKAGE) ===
+    seed = config.random_seed
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+    # Extract slide IDs
+    slide_ids = [bag["slide_id"] for bag in mil_data]
+    random.shuffle(slide_ids)
+
+    n = len(slide_ids)
+    train_end = int(config.train_ratio * n)
+    val_end = int((config.train_ratio + config.val_ratio) * n)
+
+    train_ids = set(slide_ids[:train_end])
+    val_ids = set(slide_ids[train_end:val_end])
+    test_ids = set(slide_ids[val_end:])
+
+    # Map to indices
+    train_idx = [i for i, bag in enumerate(mil_data) if bag["slide_id"] in train_ids]
+    val_idx = [i for i, bag in enumerate(mil_data) if bag["slide_id"] in val_ids]
+    test_idx = [i for i, bag in enumerate(mil_data) if bag["slide_id"] in test_ids]
+
+    print(f"Split: Train={len(train_idx)}, Val={len(val_idx)}, Test={len(test_idx)} slides")
+
+    # === 5. CREATE DATASETS ===
+    train_dataset = MILBagDataset(mil_data, train_idx)
+    val_dataset = MILBagDataset(mil_data, val_idx)
+    test_dataset = MILBagDataset(mil_data, test_idx)
+
+    # === 6. DATALOADERS (batch_size=1 → one bag per batch).
+    # Use collation function to map batch of dicts to dict of tensors ===
+    # train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True, num_workers=2, pin_memory=True)
+    # val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=2, pin_memory=True)
+    # test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=2, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=5, shuffle=True,
+                              num_workers=2, pin_memory=True, collate_fn=mil_collate_fn)
+    val_loader = DataLoader(val_dataset, batch_size=5, shuffle=False,
+                            num_workers=2, pin_memory=True, collate_fn=mil_collate_fn)
+    test_loader = DataLoader(test_dataset, batch_size=5, shuffle=False,
+                             num_workers=2, pin_memory=True, collate_fn=mil_collate_fn)
+
+    print("DataLoaders ready. Training can begin.")
+    return train_loader, val_loader, test_loader
+
+
+def pad_mil_data(mil_data):
+    # --------------------------------------------------------------
+    # PRE-PAD ALL BAGS TO GLOBAL MAX (ONE-TIME)
+    # --------------------------------------------------------------
+    from torch.nn.utils.rnn import pad_sequence
+
+    # === FIND GLOBAL MAX N ===
+    all_N = [bag["features"].shape[0] for bag in mil_data]
+    global_max_N = max(all_N)
+    print(f"Global max patches per bag: {global_max_N}")
+
+    # === PRE-PAD ALL BAGS ===
+    padded_mil_data = []
+    for bag in mil_data:
+        N = bag["features"].shape[0]
+        if N < global_max_N:
+            # Pad features
+            pad_len = global_max_N - N
+            pad_features = torch.zeros(pad_len, bag["features"].shape[1])
+            features_padded = torch.cat([bag["features"], pad_features], dim=0)
+
+            # Pad coordinates (with -1 to mark invalid)
+            pad_coords = torch.full((pad_len, 2), -1, dtype=torch.long)
+            coords_padded = torch.cat([bag["coordinates"], pad_coords], dim=0)
+
+            # Create mask: 1 for real, 0 for pad
+            mask = torch.cat([torch.ones(N), torch.zeros(pad_len)])
+        else:
+            features_padded = bag["features"]
+            coords_padded = bag["coordinates"]
+            mask = torch.ones(N)
+
+        padded_mil_data.append({
+            "features": features_padded,  # (global_max_N, D)
+            "mask": mask,  # (global_max_N,)
+            "label": bag["slide_label"],
+            "slide_id": bag["slide_id"],
+            "coordinates": coords_padded  # (global_max_N, 2), -1 for pads
+        })
+
+    print(f"Pre-padded {len(padded_mil_data)} bags to size {global_max_N}")
+    return padded_mil_data  # overwrite
 
 
 
-# Your existing embed_patch (from Cell 3) and device
-# ...
-
-NEG_DIR = Path("../data/camelyon17_test_negative")
-PATCH_SIZE = 96
-N_PATCHES_PER_SLIDE = 4000  # Matches your positive bags
-
-# Load positives
-mil_data = torch.load("../data/camelyon17_mil_bags.pt", map_location="cpu")
-print(f"Loaded {len(mil_data)} positive bags.")
-
-# List of negative slide files (update with your downloads)
-negative_files = list(NEG_DIR.glob("*.tif"))[:50]  # Or filter from CSV
-if len(negative_files) < 50:
-    print(f"Warning: Only {len(negative_files)} negatives found. Adjust as needed.")
-
-negative_bags = []
-random.seed(42)  # Reproducible sampling
-
-for wsi_path in tqdm(negative_files, desc="Extracting negative bags"):
-    slide = openslide.OpenSlide(str(wsi_path))
-    slide_id = f"NEG_{wsi_path.stem}"
-
-    # Random patch locations (avoid borders)
-    w, h = slide.dimensions
-    patch_coords = []
-    patch_embs = []
-
-    for _ in range(N_PATCHES_PER_SLIDE):
-        x = random.randint(0, w - PATCH_SIZE)
-        y = random.randint(0, h - PATCH_SIZE)
-        region = slide.read_region((x, y), 0, (PATCH_SIZE, PATCH_SIZE))
-        patch_rgb = np.array(region.convert("RGB"))  # (96,96,3)
-        emb = embed_patch(patch_rgb)  # Your function
-        patch_embs.append(emb)
-        patch_coords.append((x, y))
-
-    feats = torch.stack(patch_embs)  # (4000, 512)
-    coords = torch.tensor(patch_coords, dtype=torch.long)  # (4000, 2)
-
-    negative_bags.append({
-        "features": feats,
-        "coords": coords,
-        "label": torch.zeros(N_PATCHES_PER_SLIDE, dtype=torch.float),  # All patch labels 0
-        "slide_label": torch.tensor(0.0),
-        "soft_label": torch.tensor(0.0),
-        "slide_id": slide_id
-    })
-
-    slide.close()  # Free memory
-    if len(negative_bags) >= 50:
-        break
-
-print(f"Created {len(negative_bags)} negative bags.")
+if __name__ == "__main__":
+    train_loader, val_loader, test_loader = make_bags_dataset()
+    print("Sample batch from train_loader:")
+    batch = next(iter(train_loader))
+    print({k: v.shape if isinstance(v, torch.Tensor) else v for k, v in batch.items()})

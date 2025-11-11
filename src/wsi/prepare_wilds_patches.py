@@ -68,6 +68,15 @@ def get_tissue_roi_wilds_style(slide, level=2, thumb_size=1024, min_area=500, pa
     _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     mask = cv2.dilate(mask, np.ones((5,5), np.uint8), iterations=2)
     mask = cv2.erode(mask, np.ones((3,3), np.uint8), iterations=1)
+    # # debug
+    # # After get_tissue_roi_wilds_style()
+    # thumb = slide.get_thumbnail((1024, 1024))
+    # thumb_np = np.array(thumb)
+    # x, y, w, h = cv2.boundingRect(cv2.findNonZero(mask))
+    # cv2.rectangle(thumb_np, (x, y), (x + w, y + h), (255, 0, 0), 2)
+    # plt.imshow(thumb_np);
+    # plt.title("Tissue ROI");
+    # plt.show()
 
     # 3. Remove small objects
     num_labels, labels = cv2.connectedComponents(mask)
@@ -129,6 +138,7 @@ def prepare_negative_mil_bags_wilds_exact(
 
         # 1. ROI in level 0
         roi = get_tissue_roi_wilds_style(slide, level=level, padding=1000)
+
         if roi is None:
             slide.close()
             continue

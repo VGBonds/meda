@@ -107,11 +107,9 @@ def create_mil_bags(ds):
             "slide_id": sid
         })
 
-
-
     print(f"\nCreated {len(mil_data)} slide-level bags.")
     print(
-        f"Example: {mil_data[0]['slide_id']} → {mil_data[0]['features'].shape[0]} patches, label={mil_data[0]['label'].item()}")
+        f"Example: {mil_data[0]['slide_id']} → {mil_data[0]['features'].shape[0]} patches, slide label={mil_data[0]['slide_id'].item()}")
 
     return mil_data
 
