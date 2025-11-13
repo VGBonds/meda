@@ -94,21 +94,22 @@ def get_tissue_roi_wilds_style(slide, level=2, thumb_size=1024, min_area=500, pa
 # --------------------------------------------------------------
 # WILDS-EXACT: 224×224 @ Level 2
 # --------------------------------------------------------------
-def prepare_negative_mil_bags_wilds_exact(
-    negative_wsi_folder: str | Path,
-    negative_mil_cache: str | Path,
+def prepare_mil_bags_wilds_exact(
+    wsi_folder: str | Path,
+    mil_cache: str | Path,
     patch_size: int = 224,
     level: int = 2,           # 4x downsample
     stride: int = 224,
     tissue_threshold: float = 0.5,
     max_slides: int = 50,
+    slide_label: int = 0
 ):
-    negative_wsi_folder = Path(negative_wsi_folder)
-    negative_mil_cache   = Path(negative_mil_cache)
-    negative_mil_cache.parent.mkdir(parents=True, exist_ok=True)
+    wsi_folder = Path(wsi_folder)
+    mil_cache   = Path(mil_cache)
+    mil_cache.parent.mkdir(parents=True, exist_ok=True)
 
-    wsi_files = sorted([f for f in negative_wsi_folder.glob("*.tif") if not f.name.startswith(".")])[:max_slides]
-    negative_bags = []
+    wsi_files = sorted([f for f in wsi_folder.glob("*.tif") if not f.name.startswith(".")])[:max_slides]
+    bags = []
 
     for wsi_path in tqdm(wsi_files, desc="Negative bags (WILDS-EXACT)"):
         slide = openslide.OpenSlide(str(wsi_path))
@@ -157,22 +158,22 @@ def prepare_negative_mil_bags_wilds_exact(
         feats = torch.stack(feats)
         coords = torch.tensor(coords_l0, dtype=torch.long)
 
-        negative_bags.append({
+        bags.append({
             "features": feats,
             "coordinates": coords,
-            "label": torch.zeros(len(feats), dtype=torch.float),
-            "slide_label": torch.tensor(0.0),
-            "soft_label": torch.tensor(0.0),
+            #"label": torch.zeros(len(feats), dtype=torch.float),
+            "slide_label": torch.tensor(slide_label, dtype=torch.float),
+            # "soft_label": torch.tensor(0.0),
             "slide_id": slide_id
         })
 
         slide.close()
-        if len(negative_bags) >= max_slides:
+        if len(bags) >= max_slides:
             break
 
-    torch.save(negative_bags, negative_mil_cache)
-    print(f"Saved {len(negative_bags)} bags to {negative_mil_cache}")
-    return negative_bags
+    torch.save(bags, mil_cache)
+    print(f"Saved {len(bags)} bags to {mil_cache}")
+    return bags
 
 
 def get_min_max_coordinates(mil_data):
@@ -183,18 +184,37 @@ def get_min_max_coordinates(mil_data):
 
 
 if __name__ == "__main__":
-    wsi_path = os.path.join(config.negative_wsi_folder, "patient_002_node_0.tif")
-    slide = openslide.OpenSlide(str(wsi_path))
-    print("Vendor:", slide.properties.get("openslide.vendor"))  # should be "hamamatsu"
-    print("Dimensions:", slide.dimensions)
+    # wsi_path = os.path.join(config.negative_wsi_folder, "patient_002_node_0.tif")
+    # slide = openslide.OpenSlide(str(wsi_path))
+    # print("Vendor:", slide.properties.get("openslide.vendor"))  # should be "hamamatsu"
+    # print("Dimensions:", slide.dimensions)
 
-    negative_bags = prepare_negative_mil_bags_wilds_exact(
-        negative_wsi_folder = config.negative_wsi_folder,
-        negative_mil_cache = config.negative_mil_cache,
+    # --------------------------------------------------------------
+    # NEGATIVE BAG EXTRACTION – IDENTICAL TO Camelyon17-WILDS
+    # --------------------------------------------------------------
+
+    negative_bags = prepare_mil_bags_wilds_exact(
+        wsi_folder = config.negative_wsi_folder,
+        mil_cache = config.negative_mil_cache,
         #patch_size = config.patch_size,
         #level=2,
         #stride = config.stride,
         #max_slides = 50,
+        slide_label = 0
+    )
+
+    # --------------------------------------------------------------
+    # POSITIVE BAG EXTRACTION – IDENTICAL TO Camelyon17-WILDS
+    # --------------------------------------------------------------
+
+    positive_bags = prepare_mil_bags_wilds_exact(
+        wsi_folder=config.positive_wsi_folder,
+        mil_cache=config.positive_mil_cache,
+        # patch_size = config.patch_size,
+        # level=2,
+        # stride = config.stride,
+        # max_slides = 50,
+        slide_label=1
     )
 
     get_min_max_coordinates(negative_bags)

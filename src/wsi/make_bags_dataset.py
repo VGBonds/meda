@@ -99,11 +99,14 @@ def make_bags_dataset(positive_bags_path=config.positive_mil_cache, negative_bag
     # val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=2, pin_memory=True)
     # test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=2, pin_memory=True)
     train_loader = DataLoader(train_dataset, batch_size=5, shuffle=True,
-                              num_workers=2, pin_memory=True, collate_fn=mil_collate_fn)
+                              num_workers=config.loader_num_workers, pin_memory=True,
+                              collate_fn=mil_collate_fn)
     val_loader = DataLoader(val_dataset, batch_size=5, shuffle=False,
-                            num_workers=2, pin_memory=True, collate_fn=mil_collate_fn)
+                            num_workers=config.loader_num_workers, pin_memory=True,
+                            collate_fn=mil_collate_fn)
     test_loader = DataLoader(test_dataset, batch_size=5, shuffle=False,
-                             num_workers=2, pin_memory=True, collate_fn=mil_collate_fn)
+                             num_workers=config.loader_num_workers, pin_memory=True,
+                             collate_fn=mil_collate_fn)
 
     print("DataLoaders ready. Training can begin.")
     return train_loader, val_loader, test_loader

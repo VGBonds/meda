@@ -19,13 +19,14 @@ project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 
 negative_wsi_folder="/Volumes/Data2/negWSI"
+positive_wsi_folder="/Volumes/Data2/posWSI"
 
 embedding_model = "hibou-L" #"hibou-L" . "ResNet50"
 
 patch_dataset_id = "wltjr1007/Camelyon17-WILDS"
 cache_directory = os.path.join(project_root, "data", "camelyon17")
-positive_mil_cache = os.path.join(project_root,  "data", "camelyon17_bags","positive_mil_bags.pt")
-negative_mil_cache = os.path.join(project_root,  "data", "camelyon17_bags", "negative_mil_bags.pt")
+positive_mil_cache = os.path.join(project_root,  "data", "camelyon17_bags","positive_mil_bags_c17.pt")
+negative_mil_cache = os.path.join(project_root,  "data", "camelyon17_bags", "negative_mil_bags_c17.pt")
 
 embedding_model_cache_directory = os.path.join(project_root, "models", embedding_model)
 
@@ -43,6 +44,7 @@ train_ratio = 0.8
 val_ratio = 0.1
 test_ratio = 0.1
 assert train_ratio + val_ratio + test_ratio == 1, "Ratios must sum to 1"
+loader_num_workers = 1
 
 # === Model CONFIG ===
 INPUT_DIM = 1024        # hibou-L output
@@ -50,4 +52,6 @@ EPOCHS = 20
 LR = 2e-4
 PATIENCE = 5
 MODEL_SAVE = "abmil_hibou_best.pth"
+
+
 
