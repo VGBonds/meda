@@ -22,7 +22,7 @@ class MILBagDataset(Dataset):
         return {
             "features": bag["features"],            # (global_max_N, D)
             "mask": bag["mask"],                    # (global_max_N,)
-            "label": bag["label"],                  # scalar
+            "slide_label": bag["slide_label"],                  # scalar
             "slide_id": bag["slide_id"],
             "coordinates": bag["coordinates"]       # (global_max_N, 2)
         }
@@ -32,7 +32,7 @@ class MILBagDataset(Dataset):
 def mil_collate_fn(batch):
     features = torch.stack([item["features"] for item in batch])  # (B, MAX_N, D)
     masks = torch.stack([item["mask"] for item in batch])        # (B, MAX_N)
-    labels = torch.stack([item["label"] for item in batch])      # (B,)
+    labels = torch.stack([item["slide_label"] for item in batch])      # (B,)
     slide_ids = [item["slide_id"] for item in batch]
     coordinates = [item["coordinates"] for item in batch]
     return {
@@ -147,7 +147,7 @@ def pad_mil_data(mil_data):
         padded_mil_data.append({
             "features": features_padded,  # (global_max_N, D)
             "mask": mask,  # (global_max_N,)
-            "label": bag["slide_label"],
+            "slide_label": bag["slide_label"],
             "slide_id": bag["slide_id"],
             "coordinates": coords_padded  # (global_max_N, 2), -1 for pads
         })
