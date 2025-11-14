@@ -48,10 +48,14 @@ loader_num_workers = 1
 
 # === Model CONFIG ===
 INPUT_DIM = 1024        # hibou-L output
-EPOCHS = 20
+EPOCHS = 148
 LR = 2e-4
 PATIENCE = 5
 MODEL_SAVE = "abmil_hibou_best.pth"
+
+# Bag size filter
+MAX_BAG_SIZE = 100000  # No limit
+MIN_BAG_SIZE = 1     # Remove empty bags
 
 
 

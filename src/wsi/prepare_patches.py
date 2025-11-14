@@ -35,14 +35,8 @@ def embed_patch(patch_np):  # (224,224,3)
 
 
 def get_tissue_roi_wilds_style(slide, level=2, thumb_size=1024, min_area=500, padding=1000):
-    """
-    Returns (x1, y1, x2, y2) in LEVEL 0 coordinates.
-    """
-    # 1. Thumbnail
     thumb = slide.get_thumbnail((thumb_size, thumb_size))
     gray = np.array(thumb.convert("L"))
-
-    # 2. Otsu
     _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     mask = cv2.dilate(mask, np.ones((5,5), np.uint8), iterations=2)
     mask = cv2.erode(mask, np.ones((3,3), np.uint8), iterations=1)
@@ -76,21 +70,21 @@ def get_tissue_roi_wilds_style(slide, level=2, thumb_size=1024, min_area=500, pa
     x2 = int((x + w) * scale)
     y2 = int((y + h) * scale)
 
-    # 6. Add padding + clamp
+    # === PADDING IN LEVEL 2 SPACE ===
     ds_factor = int(slide.level_downsamples[level])
-    x1 = max(0, x1 - padding)
-    y1 = max(0, y1 - padding)
-    x2 = min(slide.level_dimensions[level][0], x2 + padding)
-    y2 = min(slide.level_dimensions[level][1], y2 + padding)
+    padding_l2 = padding // ds_factor
+    x1 = max(0, x1 - padding_l2)
+    y1 = max(0, y1 - padding_l2)
+    x2 = min(slide.level_dimensions[level][0], x2 + padding_l2)
+    y2 = min(slide.level_dimensions[level][1], y2 + padding_l2)
 
-    # 7. Convert to level 0
+    # === CONVERT TO LEVEL 0 ===
     return (
         x1 * ds_factor,
         y1 * ds_factor,
         x2 * ds_factor,
         y2 * ds_factor
     )
-
 # --------------------------------------------------------------
 # WILDS-EXACT: 224×224 @ Level 2
 # --------------------------------------------------------------

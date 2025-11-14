@@ -55,7 +55,11 @@ def make_bags_dataset(positive_bags_path=config.positive_mil_cache, negative_bag
 
     # === 2. MERGE ===
     mil_data = pos_bags + neg_bags
+    # filter by size
+    mil_data = [bag for bag in mil_data if
+                (bag["features"].shape[0] >= config.MIN_BAG_SIZE and bag ["features"].shape[0] <= config.MAX_BAG_SIZE)]
     # Remove a superfluous tensor dimension. todo: fix this in bag creation
+    print(f"Filtering bags by size: {len(mil_data)} bags remain after size filter")
     for bag in mil_data:
         bag["features"] = torch.squeeze(bag["features"], dim=1)
     print(f"Merged: {len(mil_data)} total bags")
