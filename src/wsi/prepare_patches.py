@@ -111,9 +111,10 @@ def prepare_mil_bags_wilds_exact(
     wsi_files = sorted([f for f in wsi_folder.glob("*.tif") if not f.name.startswith(".")])[:max_slides]
     bags = []
 
-    for wsi_path in tqdm(wsi_files, desc="Negative bags (WILDS-EXACT)"):
+    for wsi_path in tqdm(wsi_files, desc=f"Bags {wsi_folder.name}"):
         slide = openslide.OpenSlide(str(wsi_path))
-        slide_id = f"NEG_{wsi_path.stem}"
+
+        slide_id = f"POS_{wsi_path.stem}" if slide_label==1 else f"NEG_{wsi_path.stem}"
 
         # 1. ROI in level 0
         roi = get_tissue_roi_wilds_style(slide, level=level, padding=1000)
@@ -217,7 +218,7 @@ if __name__ == "__main__":
         slide_label=1
     )
 
-    get_min_max_coordinates(negative_bags)
-    print(f"Negative bags coordinate range: {get_min_max_coordinates(negative_bags)}")
-    print(f"Created {len(negative_bags)} negative bags.")
-    print(f"Saving them as {config.negative_mil_cache}")
+    # get_min_max_coordinates(negative_bags)
+    # print(f"Negative bags coordinate range: {get_min_max_coordinates(negative_bags)}")
+    # print(f"Created {len(negative_bags)} negative bags.")
+    # print(f"Saving them as {config.negative_mil_cache}")
