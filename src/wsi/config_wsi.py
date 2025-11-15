@@ -54,7 +54,7 @@ PATIENCE = 5
 MODEL_SAVE = "abmil_hibou_best.pth"
 
 # Bag size filter
-MAX_BAG_SIZE = 100000  # No limit
+MAX_BAG_SIZE = 7000  # No limit
 MIN_BAG_SIZE = 1     # Remove empty bags
 
 

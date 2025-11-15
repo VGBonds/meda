@@ -36,8 +36,10 @@ def embed_patch(patch_np):  # (224,224,3)
 
 def get_tissue_roi_wilds_style(slide, level=2, thumb_size=1024, min_area=500, padding=1000):
     thumb = slide.get_thumbnail((thumb_size, thumb_size))
-    gray = np.array(thumb.convert("L"))
-    _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    thumb_np = np.array(thumb.convert("L"))
+    thumb_h, thumb_w = thumb_np.shape
+
+    _, mask = cv2.threshold(thumb_np, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     mask = cv2.dilate(mask, np.ones((5,5), np.uint8), iterations=2)
     mask = cv2.erode(mask, np.ones((3,3), np.uint8), iterations=1)
     # # debug
@@ -63,12 +65,13 @@ def get_tissue_roi_wilds_style(slide, level=2, thumb_size=1024, min_area=500, pa
     largest = max(contours, key=cv2.contourArea)
     x, y, w, h = cv2.boundingRect(largest)
 
-    # 5. Scale to level 1
-    scale = slide.level_dimensions[level][0] / thumb_size
-    x1 = int(x * scale)
-    y1 = int(y * scale)
-    x2 = int((x + w) * scale)
-    y2 = int((y + h) * scale)
+    # Scale using ACTUAL thumb dimensions
+    scale_x = slide.level_dimensions[level][0] / thumb_w
+    scale_y = slide.level_dimensions[level][1] / thumb_h
+    x1 = int(x * scale_x)
+    y1 = int(y * scale_y)
+    x2 = int((x + w) * scale_x)
+    y2 = int((y + h) * scale_y)
 
     # === PADDING IN LEVEL 2 SPACE ===
     ds_factor = int(slide.level_downsamples[level])
