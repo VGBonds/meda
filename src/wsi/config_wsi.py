@@ -33,6 +33,9 @@ embedding_model_cache_directory = os.path.join(project_root, "models", embedding
 trained_model_cache_directory = os.path.join(project_root, "models", "saved_models")
 trained_model_file = os.path.join(trained_model_cache_directory, "abmil_hibou_best.pth")
 
+# directory for sample images
+image_output_directory = os.path.join(project_root, "outputs", "images")
+
 random_seed = 841
 
 n_patches_per_slide = None # pick all patches
@@ -40,21 +43,25 @@ patch_size = 224
 level = 2
 stride = 224
 
-train_ratio = 0.8
+train_ratio = 0.9
 val_ratio = 0.1
-test_ratio = 0.1
+test_ratio = 0.0
 assert train_ratio + val_ratio + test_ratio == 1, "Ratios must sum to 1"
-loader_num_workers = 1
+loader_num_workers = 0
 
 # === Model CONFIG ===
 INPUT_DIM = 1024        # hibou-L output
 EPOCHS = 148
+DROPOUT_RATE = 0.5
+DROPOUT_RATE_ATTN = 0.0
+LAMBDA_ENTROPY = 0.00001
+
 LR = 2e-4
-PATIENCE = 5
+PATIENCE = 500
 MODEL_SAVE = "abmil_hibou_best.pth"
 
 # Bag size filter
-MAX_BAG_SIZE = 7000  # No limit
+MAX_BAG_SIZE = 10000  # No limit
 MIN_BAG_SIZE = 1     # Remove empty bags
 
 

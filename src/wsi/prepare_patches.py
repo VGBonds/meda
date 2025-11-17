@@ -188,20 +188,6 @@ if __name__ == "__main__":
     # print("Dimensions:", slide.dimensions)
 
     # --------------------------------------------------------------
-    # NEGATIVE BAG EXTRACTION – IDENTICAL TO Camelyon17-WILDS
-    # --------------------------------------------------------------
-
-    negative_bags = prepare_mil_bags_wilds_exact(
-        wsi_folder = config.negative_wsi_folder,
-        mil_cache = config.negative_mil_cache,
-        #patch_size = config.patch_size,
-        #level=2,
-        #stride = config.stride,
-        #max_slides = 50,
-        slide_label = 0
-    )
-
-    # --------------------------------------------------------------
     # POSITIVE BAG EXTRACTION – IDENTICAL TO Camelyon17-WILDS
     # --------------------------------------------------------------
 
@@ -213,6 +199,21 @@ if __name__ == "__main__":
         # stride = config.stride,
         # max_slides = 50,
         slide_label=1
+    )
+
+
+    # --------------------------------------------------------------
+    # NEGATIVE BAG EXTRACTION – IDENTICAL TO Camelyon17-WILDS
+    # --------------------------------------------------------------
+
+    negative_bags = prepare_mil_bags_wilds_exact(
+        wsi_folder = config.negative_wsi_folder,
+        mil_cache = config.negative_mil_cache,
+        #patch_size = config.patch_size,
+        #level=2,
+        #stride = config.stride,
+        #max_slides = 50,
+        slide_label = 0
     )
 
     # get_min_max_coordinates(negative_bags)
