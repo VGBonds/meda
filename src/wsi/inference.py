@@ -8,7 +8,7 @@ import torch
 import os
 from matplotlib.colors import LinearSegmentedColormap
 #from torchmil.models.abmil import ABMIL
-from wsi.abmil import ABMIL
+from wsi.abmil import ABMIL, PR_ABMIL
 import wsi.config_wsi as config
 from wsi.make_bags_dataset import make_bags_dataset
 from wsi.visualize_top_patches import visualize_top_patches
@@ -20,7 +20,7 @@ def predict_and_heatmap(model, batch, slide_path):
     feats = batch["features"].to(config.DEVICE)
     mask = batch["mask"].to(config.DEVICE)
     # logits, att_raw = model(feats, return_att=True)
-    logits, att_raw = model(feats, return_attention=True)
+    logits, att_raw = model(feats, mask=mask, return_attention=True)
 
     prob = torch.sigmoid(logits).item()
 
@@ -106,15 +106,25 @@ if __name__ == "__main__":
 
     criterion = torch.nn.BCEWithLogitsLoss()
     # model = ABMIL(in_shape=(config.INPUT_DIM,), criterion=criterion).to(config.DEVICE)
-    model = ABMIL(input_size=config.INPUT_DIM,
-                  hidden_dim=512,
-                  dropout=config.DROPOUT_RATE,
-                  dropout_attn=config.DROPOUT_RATE_ATTN).to(config.DEVICE)
+    # model = ABMIL(input_size=config.INPUT_DIM,
+    #               hidden_dim=512,
+    #               dropout=config.DROPOUT_RATE,
+    #               dropout_attn=config.DROPOUT_RATE_ATTN).to(config.DEVICE)
+
+    model = PR_ABMIL(
+        input_size=config.INPUT_DIM,
+        hidden_dim=config.HIDDEN_DIM,
+        dropout=config.DROPOUT_RATE,
+        dropout_attn=config.DROPOUT_RATE_ATTN,
+        patch_dropout=0.,  # 10% dropout
+        permute=False
+    ).to(config.DEVICE)
+
     model.load_state_dict(torch.load(config.trained_model_file, map_location=config.DEVICE))
 
     # === PICK 3 TEST SLIDES ===
     test_iter = iter(val_loader)
-    examples = [next(test_iter) for _ in range(1)]
+    examples = [next(test_iter) for _ in range(2)]
 
     for batch in examples:
         for idx in range(len(batch["slide_ids"])):

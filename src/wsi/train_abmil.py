@@ -5,7 +5,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchmil.models import ABMIL
+# from torchmil.models import ABMIL
 from torchmil.utils import Trainer
 from sklearn.metrics import roc_auc_score, accuracy_score
 import numpy as np
@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import wsi.config_wsi as config
 from wsi.make_bags_dataset import make_bags_dataset
 from tqdm.auto import tqdm
-from wsi.abmil import ABMIL
+from wsi.abmil import ABMIL, PR_ABMIL
 
 def train_abmil(train_loader, val_loader):
     # === MODEL ===
@@ -22,10 +22,19 @@ def train_abmil(train_loader, val_loader):
     # model = ABMIL(in_shape=(config.INPUT_DIM,), criterion=criterion).to(device)
     # torchmil implementation with gated attention
     # model = ABMIL(in_shape=(config.INPUT_DIM,), gated=True, att_dim=512, att_act="relu", criterion=criterion, ).to(device)
-    model = ABMIL(input_size=config.INPUT_DIM,
-                  hidden_dim=512,
-                  dropout=config.DROPOUT_RATE,
-                  dropout_attn=config.DROPOUT_RATE_ATTN).to(config.DEVICE)
+    # model = ABMIL(input_size=config.INPUT_DIM,
+    #               hidden_dim=512,
+    #               dropout=config.DROPOUT_RATE,
+    #               dropout_attn=config.DROPOUT_RATE_ATTN).to(config.DEVICE)
+
+    model = PR_ABMIL(
+        input_size=config.INPUT_DIM,
+        hidden_dim=config.HIDDEN_DIM,
+        dropout=config.DROPOUT_RATE,
+        dropout_attn=config.DROPOUT_RATE_ATTN,
+        patch_dropout=config.DROPOUT_RATE_PATCH,  # 10% dropout
+        permute=True
+    ).to(config.DEVICE)
 
     optimizer = optim.Adam(model.parameters(), lr=config.LR)
     print(model)
@@ -56,17 +65,17 @@ def train_abmil(train_loader, val_loader):
             mask = batch["mask"].to(config.DEVICE)  # (B, MAX_N)
             labels = batch["labels"].to(config.DEVICE)
             optimizer.zero_grad()
-            # logits, _ = model(feats, mask=mask, return_attention=false)
-            # logits, att = model(feats, mask=mask, return_att=True)
             logits, att = model(feats, mask=mask, return_attention=True)
-
             loss_ce = criterion(logits, labels)
-            entropy = -torch.sum(att * torch.log(att + 1e-8), dim=1).mean()
+            entropy = torch.multiply(labels, -torch.sum(att * torch.log(att + 1e-8), dim=1)).mean()
             loss = loss_ce + config.LAMBDA_ENTROPY * entropy
             loss.backward()
             optimizer.step()
 
-            train_losses.append(loss.item())
+            # logits, _ = model(feats, mask=mask, return_attention=false)
+            # logits, att = model(feats, mask=mask, return_att=True)
+
+            train_losses.append(loss_ce.item())
             train_preds = train_preds + torch.sigmoid(logits).cpu().detach().numpy().tolist()
             train_labels = train_labels + labels.cpu().numpy().tolist()
             max_att_t = torch.max(att , dim=1).values.detach().cpu().numpy().tolist()
@@ -93,7 +102,7 @@ def train_abmil(train_loader, val_loader):
                 loss_ce = criterion(logits, labels)
                 entropy = -torch.sum(att * torch.log(att + 1e-8), dim=1).mean()
                 loss = loss_ce + config.LAMBDA_ENTROPY * entropy
-                val_losses.append(loss.item())
+                val_losses.append(loss_ce.item())
                 val_preds_np.append(torch.sigmoid(logits).cpu().detach().numpy())
                 val_preds = val_preds + torch.sigmoid(logits).cpu().detach().numpy().tolist()
                 val_labels = val_labels + labels.cpu().numpy().tolist()
@@ -104,7 +113,7 @@ def train_abmil(train_loader, val_loader):
                                       y_pred=np.where(val_preds_np > 0.5, 1, 0))
         val_loss = np.mean(val_losses)
         # ------------------- EARLY STOPPING -------------------
-        if  train_loss<BEST_TRAIN_LOSS: #val_loss<BEST_VAL_LOSS: # and not(val_auc < (BEST_AUC-epsilon)):
+        if  val_loss<BEST_VAL_LOSS: #val_loss<BEST_VAL_LOSS: # and not(val_auc < (BEST_AUC-epsilon)):
             BEST_AUC = val_auc
             BEST_VAL_LOSS = val_loss
             BEST_TRAIN_LOSS = train_loss

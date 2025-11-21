@@ -36,7 +36,7 @@ trained_model_file = os.path.join(trained_model_cache_directory, "abmil_hibou_be
 # directory for sample images
 image_output_directory = os.path.join(project_root, "outputs", "images")
 
-random_seed = 841
+random_seed = 418
 
 n_patches_per_slide = None # pick all patches
 patch_size = 224
@@ -51,10 +51,12 @@ loader_num_workers = 0
 
 # === Model CONFIG ===
 INPUT_DIM = 1024        # hibou-L output
+HIDDEN_DIM = 512
 EPOCHS = 148
-DROPOUT_RATE = 0.5
+DROPOUT_RATE = 0.25
 DROPOUT_RATE_ATTN = 0.0
-LAMBDA_ENTROPY = 0.00001
+DROPOUT_RATE_PATCH = 0.14
+LAMBDA_ENTROPY = 0.0 # 0.00001
 
 LR = 2e-4
 PATIENCE = 500
